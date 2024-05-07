@@ -1,1 +1,7 @@
 /target
+
+data/
+
+.lapce/
+.idea/
+.vscode/

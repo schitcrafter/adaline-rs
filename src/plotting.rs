@@ -53,8 +53,8 @@ pub fn plot_percentage_history(history: &[f32], threshold: f32) -> Result<(), Bo
     Ok(())
 }
 
-pub fn plot_records(records: &[Classification]) -> Result<(), Box<dyn Error>> {
-    let root = BitMapBackend::new("input-plot.png", (640, 480)).into_drawing_area();
+pub fn plot_records(records: &[Classification], path: &str) -> Result<(), Box<dyn Error>> {
+    let root = BitMapBackend::new(path, (640, 480)).into_drawing_area();
     root.fill(&WHITE)?;
 
     let mut chart = ChartBuilder::on(&root)

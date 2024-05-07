@@ -2,12 +2,17 @@ use std::error::Error;
 
 use plotters::prelude::*;
 
+use crate::Classification;
+
 pub fn plot_percentage_history(history: &[f32], threshold: f32) -> Result<(), Box<dyn Error>> {
     let root = BitMapBackend::new("history-plot.png", (640, 480)).into_drawing_area();
     root.fill(&WHITE)?;
-    
+
     let mut chart = ChartBuilder::on(&root)
-        .caption("% of correct classifications", ("sans-serif", 50).into_font())
+        .caption(
+            "% of correct classifications",
+            ("sans-serif", 50).into_font(),
+        )
         .margin(5)
         .x_label_area_size(30)
         .y_label_area_size(30)
@@ -17,7 +22,8 @@ pub fn plot_percentage_history(history: &[f32], threshold: f32) -> Result<(), Bo
 
     chart
         .draw_series(LineSeries::new(
-            history.iter()
+            history
+                .iter()
                 .enumerate()
                 .map(|(i, percent)| (i as f32, percent * 100.0)),
             &BLUE,
@@ -25,11 +31,15 @@ pub fn plot_percentage_history(history: &[f32], threshold: f32) -> Result<(), Bo
         .label("Percentage of correct classifications")
         .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
 
-    chart.draw_series(LineSeries::new(
-        [(0.0, threshold * 100.0), ((history.len() as f32), threshold * 100.0)],
-        &RED
-    ))?
-    .label("Threshold");
+    chart
+        .draw_series(LineSeries::new(
+            [
+                (0.0, threshold * 100.0),
+                ((history.len() as f32), threshold * 100.0),
+            ],
+            &RED,
+        ))?
+        .label("Threshold");
     // .legend()
 
     chart
@@ -37,6 +47,33 @@ pub fn plot_percentage_history(history: &[f32], threshold: f32) -> Result<(), Bo
         .background_style(&WHITE.mix(0.8))
         .border_style(&BLACK)
         .draw()?;
+
+    root.present()?;
+
+    Ok(())
+}
+
+pub fn plot_records(records: &[Classification]) -> Result<(), Box<dyn Error>> {
+    let root = BitMapBackend::new("input-plot.png", (640, 480)).into_drawing_area();
+    root.fill(&WHITE)?;
+
+    let mut chart = ChartBuilder::on(&root)
+        .caption("Input data", ("sans-serif", 50).into_font())
+        .margin(5)
+        .x_label_area_size(30)
+        .y_label_area_size(30)
+        .build_cartesian_2d(0.0..10f32, 0f32..10f32)?;
+
+    chart.configure_mesh().draw()?;
+
+    chart.draw_series(
+        records
+            .iter()
+            .map(|class| {
+                let color = if class.classification { RED.filled() } else { GREEN.filled() };
+                Circle::new((class.x[0], class.x[1]), 2, color)
+            }),
+    )?;
 
     root.present()?;
 

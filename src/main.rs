@@ -61,7 +61,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn train_on_all_records(adaline: &mut Adaline, records: &Vec<Classification>) -> Vec<f32> {
+fn train_on_all_records(adaline: &mut Adaline, records: &[Classification]) -> Vec<f32> {
     let mut correct_class_percents: Vec<f32> = Vec::new();
     for _ in 0..NUM_STEPS {
         correct_class_percents.push(adaline.classify_multiple_percent(records));
@@ -91,7 +91,7 @@ fn train_on_all_records_until(
     correct_class_percents
 }
 
-fn train_on_one_record(records: &Vec<Classification>, adaline: &mut Adaline) {
+fn train_on_one_record(records: &[Classification], adaline: &mut Adaline) {
     let test_record = records
         .iter()
         .find(|record| adaline.classify(&record.x) != record.classification)

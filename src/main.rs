@@ -36,7 +36,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!("Number of records: {}", records.len());
 
-    plotting::plot_records(&records, "input-plot.png")?;
+    plotting::plot_records(&records, "inputs.html")?;
 
     let mut adaline = Adaline::new_random(0.002);
 

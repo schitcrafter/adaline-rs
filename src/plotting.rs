@@ -1,81 +1,65 @@
 use std::error::Error;
 
-use plotters::prelude::*;
+use plotly::{
+    common::Mode,
+    Plot, Scatter,
+};
 
 use crate::Classification;
 
 pub fn plot_percentage_history(history: &[f32], threshold: f32) -> Result<(), Box<dyn Error>> {
-    let root = BitMapBackend::new("history-plot.png", (640, 480)).into_drawing_area();
-    root.fill(&WHITE)?;
+    let mut plot = Plot::new();
 
-    let mut chart = ChartBuilder::on(&root)
-        .caption(
-            "% of correct classifications",
-            ("sans-serif", 50).into_font(),
-        )
-        .margin(5)
-        .x_label_area_size(30)
-        .y_label_area_size(30)
-        .build_cartesian_2d(0.0..(history.len() as f32), 0f32..100.0)?;
+    let history_trace = Scatter::new(
+        (0..history.len()).map(|i| i as f32).collect(),
+        history.to_vec(),
+    )
+    .fill_color("blue")
+    .name("History");
 
-    chart.configure_mesh().draw()?;
+    let threshold_trace =
+        Scatter::new(vec![0f32, history.len() as f32], vec![threshold, threshold])
+            .fill_color("red")
+            .name("Threshold");
 
-    chart
-        .draw_series(LineSeries::new(
-            history
-                .iter()
-                .enumerate()
-                .map(|(i, percent)| (i as f32, percent * 100.0)),
-            &BLUE,
-        ))?
-        .label("Percentage of correct classifications")
-        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+    plot.add_trace(history_trace);
+    plot.add_trace(threshold_trace);
 
-    chart
-        .draw_series(LineSeries::new(
-            [
-                (0.0, threshold * 100.0),
-                ((history.len() as f32), threshold * 100.0),
-            ],
-            &RED,
-        ))?
-        .label("Threshold");
-    // .legend()
-
-    chart
-        .configure_series_labels()
-        .background_style(&WHITE.mix(0.8))
-        .border_style(&BLACK)
-        .draw()?;
-
-    root.present()?;
+    plot.write_html("percentage_history.html");
 
     Ok(())
 }
 
 pub fn plot_records(records: &[Classification], path: &str) -> Result<(), Box<dyn Error>> {
-    let root = BitMapBackend::new(path, (640, 480)).into_drawing_area();
-    root.fill(&WHITE)?;
+    let mut plot = Plot::new();
 
-    let mut chart = ChartBuilder::on(&root)
-        .caption("Input data", ("sans-serif", 50).into_font())
-        .margin(5)
-        .x_label_area_size(30)
-        .y_label_area_size(30)
-        .build_cartesian_2d(0.0..10f32, 0f32..10f32)?;
+    let (records_true, records_false): (Vec<_>, Vec<_>) =
+        records.iter().partition(|class| class.classification);
 
-    chart.configure_mesh().draw()?;
+    let (x, y): (Vec<_>, Vec<_>) = records_false
+        .iter()
+        .map(|class| (class.x[0], class.x[1]))
+        .unzip();
 
-    chart.draw_series(
-        records
-            .iter()
-            .map(|class| {
-                let color = if class.classification { RED.filled() } else { GREEN.filled() };
-                Circle::new((class.x[0], class.x[1]), 2, color)
-            }),
-    )?;
+    let records_trace_false = Scatter::new(x, y)
+        .name("Records with classification -1")
+        .mode(Mode::Markers)
+        .fill_color("blue");
 
-    root.present()?;
+    let (x, y): (Vec<_>, Vec<_>) = records_true
+        .iter()
+        .map(|class| (class.x[0], class.x[1]))
+        .unzip();
+
+    let records_trace_true = Scatter::new(x, y)
+        .name("Records with classification 1")
+        .mode(Mode::Markers)
+        .fill_color("red");
+
+    plot.add_trace(records_trace_false);
+    plot.add_trace(records_trace_true);
+
+    plot.write_html(path);
 
     Ok(())
 }

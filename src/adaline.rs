@@ -16,7 +16,7 @@ pub struct Adaline {
 
 impl Adaline {
     pub fn new(weights: Vec<f32>, train_constant: f32) -> Adaline {
-        if weights.len() == 0 {
+        if weights.is_empty() {
             // FIXME: This should be an error
             panic!("Not enough weights");
         }

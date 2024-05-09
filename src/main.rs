@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .filter_map(|res: Result<Vec<f32>, _>| {
             res.ok().map(|record: Vec<f32>| Classification {
                 classification: record[0].is_sign_positive(),
-                x: record[1..].try_into().unwrap(),
+                x: record[1..].into(),
             })
         })
         .collect();

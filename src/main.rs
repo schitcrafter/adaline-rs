@@ -13,11 +13,11 @@ mod plotting;
 struct Classification {
     /// true: 1, false: -1
     classification: bool,
-    x: [f32; 2],
+    x: Vec<f32>,
 }
 
 const NUM_STEPS: u32 = 50;
-const THRESHOLD: f32 = 0.9;
+const THRESHOLD: f32 = 0.98;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut reader = csv::ReaderBuilder::new()
@@ -26,8 +26,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let records: Vec<_> = reader
         .deserialize()
-        .filter_map(|res: Result<[f32; 3], _>| {
-            res.ok().map(|record: [f32; 3]| Classification {
+        .filter_map(|res: Result<Vec<f32>, _>| {
+            res.ok().map(|record: Vec<f32>| Classification {
                 classification: record[0].is_sign_positive(),
                 x: record[1..].try_into().unwrap(),
             })
@@ -38,13 +38,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     plotting::plot_records(&records, "input-plot.png")?;
 
-    let mut adaline = Adaline::new_random(0.002);
+    let mut adaline = Adaline::new_random(0.002, records[0].x.len());
 
     println!("Weights: {:?}", adaline.weights());
     println!("Training starting");
 
     // train_on_one_record(&records, &mut adaline);
 
+    println!("Training until model correctly classifies {}% of records correctly", THRESHOLD * 100.0);
     let correct_class_percents = train_on_all_records_until(&mut adaline, &records, THRESHOLD);
     println!("Took {} generations", correct_class_percents.len());
     
@@ -53,8 +54,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Done with training");
 
     println!(
-        "% of correct classifications: {}",
-        adaline.classify_multiple_percent(&records)
+        "{}% of records were correctly classified",
+        adaline.classify_multiple_percent(&records) * 100.0
     );
     println!("Weights: {:?}", adaline.weights());
 
@@ -78,16 +79,25 @@ fn train_on_all_records_until(
     threshold: f32,
 ) -> Vec<f32> {
     let mut correct_class_percents: Vec<f32> = Vec::new();
+
     loop {
         let classification_percent = adaline.classify_multiple_percent(records);
         correct_class_percents.push(classification_percent);
+
         if classification_percent >= threshold {
             break;
         }
+
+        if correct_class_percents.len() >= 10_000 {
+            println!("ERROR: Stopping training after {} generations", correct_class_percents.len());
+            break;
+        }
+
         for record in records {
             adaline.train(record);
         }
     }
+
     correct_class_percents
 }
 
